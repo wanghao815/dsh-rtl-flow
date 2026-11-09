@@ -6,7 +6,7 @@
 
 - 用户选择 npm 分发，并同意仅将插件内容建立为独立公开仓库。
 - 本地已核实 GitHub 用户 wanghao815、npm 用户 wanghao_arch；身份检查不代表包名所有权或将来的发布必然成功。
-- 2026-11-09 registry 查询返回 dsh-rtl-flow E404，尚未发布。GitHub 公开源码仓库已按用户确认创建；源码推送及 npm 状态以实际提交和 registry 为准。
+- 2026-11-09 registry 查询返回 dsh-rtl-flow E404，尚未发布。GitHub 独立公开源码仓库已创建并推送源码，dsh-plugin 等相关 topic 已添加；npm 状态以实际 registry 为准。
 - package.json 已填写目标 repository、homepage、bugs 和作者；安装说明适配独立仓库根目录。
 - 0.2.0 已有 34 项功能测试、真实资源负例、独立 DSH profile 和发布 dry-run 证据，范围见 [验证说明](validation.md)。
 
@@ -19,8 +19,9 @@
 
 ## GitHub 源码公开与 npm 发布
 
-- [ ] 复核待推送清单只包含独立插件资料，不含来源 RTL 工程、工艺材料、主机路径记录、缓存或凭据。
-- [ ] 创建 GitHub 公开仓库、推送经检查的源码，添加 dsh-plugin topic；正式 release/tag 对应实际提交。
+- [x] 复核待推送清单只包含独立插件资料；原始本地报告未推送，测试日志夹具已隐去主机路径，不含来源 RTL 工程、工艺材料、缓存或凭据。
+- [x] 创建 GitHub 公开仓库、推送经检查的源码，添加 dsh-plugin topic。
+- [ ] 真实项目验证完成后，正式 release/tag 对应待发布包的实际提交。
 - [ ] 复核 npm 登录身份、包名权限、发布版本和 registry，按实际要求完成发布认证。
 - [ ] 发布已核对摘要的 tarball，记录包版本、完整性信息及 npm 页面。
 - [ ] 从公开 registry 安装到干净 DSH profile，复验配置、五工具、资源检测和卸载；不以本地安装结果替代。

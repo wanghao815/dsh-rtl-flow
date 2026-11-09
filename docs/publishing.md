@@ -54,7 +54,7 @@ dsh --profile rtl --dump-config
 dsh --profile rtl
 ```
 
-已选定发布身份：GitHub `wanghao815`，npm `wanghao_arch`，公开源码仓库为 `https://github.com/wanghao815/dsh-rtl-flow`，npm 包名为 `dsh-rtl-flow`。repository/homepage/bugs 已填写，GitHub 仓库已创建；npm 尚未发布。正式执行前再核对账号、包名和远端状态。步骤与完成证据见 [发布检查单](release-checklist.md)。
+已选定发布身份：GitHub `wanghao815`，npm `wanghao_arch`，公开源码仓库为 `https://github.com/wanghao815/dsh-rtl-flow`，npm 包名为 `dsh-rtl-flow`。repository/homepage/bugs 已填写，GitHub 源码已公开；npm 尚未发布。正式执行前再核对账号、包名和远端状态。步骤与完成证据见 [发布检查单](release-checklist.md)。
 
 公开仓库只包含插件源码、文档、示例、模板及独立测试；不包含来源 RTL 工程、reports、node_modules、PDK、主机配置或凭据。仓库添加 `dsh-plugin` topic。
 
