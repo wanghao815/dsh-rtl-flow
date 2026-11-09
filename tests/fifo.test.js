@@ -6,7 +6,7 @@ import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
 
-test('non-systolic FIFO: non-power-of-two wrap, full, simultaneous transfer, stalls, order and reset', async t => {
+test('FIFO: non-power-of-two wrap, full, simultaneous transfer, stalls, order and reset', async t => {
   const tool = process.env.RTL_FLOW_VERILATOR || 'verilator'
   const version = spawnSync(tool, ['--version'], { encoding: 'utf8' })
   if (version.error?.code === 'ENOENT') return t.skip('Verilator absent; core and Harness tests remain available')

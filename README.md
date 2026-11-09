@@ -1,8 +1,8 @@
 # RTL design flow for DeepSeek Harness
 
-`dsh-rtl-flow` 是一个通用 RTL 工程插件，覆盖架构、RTL、验证、综合、物理实现、交付和恢复。0.2.0 根据用户确认的 Q2–Q6，加入五种工作入口、按特性组合的指导、真实文件/报告审计、设备资源检测和分离的交付状态。
+`dsh-rtl-flow` 是一个通用 RTL 工程插件，覆盖架构、RTL、验证、综合、物理实现、交付和恢复。它提供五种工作入口、按特性组合的指导、真实文件与报告审计、设备资源检测，以及分别记录技术验收和交付结果的机制。
 
-**先读 [核心流程全文](docs/core-workflow.md)。** 它是主流程的唯一正文，`rtl_guide(workflow)` 直接读取同一文件。完整模型设计闭环的实测由用户留作发布前执行，本次更新不声称该项已通过。
+**先读 [核心流程全文](docs/core-workflow.md)。** 它是主流程的唯一正文，`rtl_guide(workflow)` 直接读取同一文件。各阶段应展示的决策、波形和实际版图见 [工程输出策略](docs/output_human_final.md)。当前验证范围见 [验证说明](docs/validation.md)。
 
 ## 支持的工作入口
 
@@ -20,13 +20,13 @@
 
 stage 主流程与 arithmetic、stream、protocol、multiclock、memory、macros、formal 七个专题共同工作。每个专题说明进入条件、输入、处理、产物、判据和失败诊断。比如带反压、跨时钟的算术模块同时启用 arithmetic/stream/multiclock；一个名称不能代替完整特性清单。
 
-模块名称只提供可编辑的初始建议。新项目须明确实际特性，不继承来源案例的阵列、数制、流水、容量、频率或工艺。工具/平台按项目选择；当前后端指导以开源 ASIC 流程为参考，FPGA 与商业工具需要对应项目适配。
+模块名称只提供可编辑的初始建议。设计拓扑、数制、流水、容量、频率和工艺均由当前项目的需求确定。工具/平台按项目选择；当前后端指导以开源 ASIC 流程为参考，FPGA 与商业工具需要对应项目适配。
 
 ## 安装与配置
 
 已测运行基线：Node.js ≥24.9，DeepSeek Harness **0.2.2-rc.1**。DSH 是预览版，升级后重新验证。插件版本 0.2.0 与 DSH 版本彼此独立。
 
-以下命令在独立插件仓库根目录（含 package.json）执行。如果仍在来源 RTL 工程内，先进入其 `dsh/` 子目录。
+以下命令在插件仓库根目录（含 package.json）执行。
 
 ```sh
 npm ci --ignore-scripts
@@ -44,7 +44,7 @@ dsh --profile rtl
 
 未全局安装 dsh，可用 `npx --yes @deepseek-ai/dsh@0.2.2-rc.1` 替代命令中的 dsh。开发 overlay 用 `node bin/rtl-flow.js overlay` 输出绝对入口路径，选择 bundle 或 overlay 中一种加载方式。
 
-正式发布 npm 后，可直接安装 `dsh-rtl-flow@0.2.0`。当前是否已公开发布及来源仓库是否已创建，以实际 registry/GitHub 状态为准；写入元数据不代表已上传。发布步骤与实测条件见 [发布检查单](docs/release-checklist.md)。
+正式发布 npm 后，可直接安装 `dsh-rtl-flow@0.2.0`。源码位于 [GitHub](https://github.com/wanghao815/dsh-rtl-flow)，npm 可用版本以实际 registry 为准。发布步骤与实测条件见 [发布检查单](docs/release-checklist.md)。
 
 插件沿用宿主模型、文件/终端权限及取消机制，不包含 API key。配置字段：`enabled`、`promptOrder`、`maxInputBytes`，以及可选 `workspaceRoot`。要使用原生资源检测工具，将 workspaceRoot 设为当前已授权项目的绝对路径；不配置时用宿主终端执行 CLI resources。切换项目须同步更新该字段。
 
@@ -99,16 +99,16 @@ CLI 退出码：0=本操作指定范围满足，1=检查/预检未满足或原�
 
 明确 closeout 决定下，paused 项目可通过受控入口执行标为 purpose=closeout 的归档/清单核对任务；剩余设计任务仍阻塞，archived 不启动新任务。
 
-## 版本与验证
+## 项目格式与验证
 
-0.2.0 使用 schema_version=2。`migrate <project>` 只输出 v1→v2 草案，保留工作区；必须重新核对特性、预算和旧证据的来源绑定，禁止自动把 v1 报告变成已认证 v2 报告。原 0.1.0 包和证据仍保留。
+项目使用 schema_version=2。`migrate <project>` 只输出 v1→v2 草案，保留工作区；必须重新核对特性、预算和证据绑定，迁移草案不代表证据已通过审计。
 
-四类配置见 [FIFO](examples/fifo.json)、[APB](examples/apb-registers.json)、[DSP](examples/dsp-mac.json)、[真实宏存储](examples/memory-subsystem.json)。更多说明：[核心流程](docs/core-workflow.md)、[证据](docs/evidence.md)、[资源](docs/resources.md)、[来源](docs/source-map.md)、[发布](docs/publishing.md)、[验证](docs/validation.md)。原始本地报告保存在 reports/，不随 npm 包发布。
+四类配置见 [FIFO](examples/fifo.json)、[APB](examples/apb-registers.json)、[DSP](examples/dsp-mac.json)、[真实宏存储](examples/memory-subsystem.json)。更多说明：[核心流程](docs/core-workflow.md)、[工程输出](docs/output_human_final.md)、[证据](docs/evidence.md)、[资源](docs/resources.md)、[发布](docs/publishing.md)、[验证](docs/validation.md)。原始本地报告保存在 reports/，不随 npm 包发布。
 
 ## Model Experience 与限制
 
 插件注入稳定的流程入口提示和五个工具 schema，详细主流程/专题按需加载。工具注册/提示随 Cordis 卸载和配置重载清理。它没有全局拦截任意宿主终端命令的权限策略；Agent 必须依核心流程在重任务前使用预检/受控入口，绕过 CLI 的命令不受本运行器监测。
 
-原生报告只对文档列出的格式自动解析，未知格式保持开放。摘要保证一致性，不证明日志不可篡改或原始工具本身正确。规则/模型覆盖、抽象和工程适用性仍需复核。没有将本轮单元/宿主测试当成真实模型新设计、全流程 PDK 或制造签核验证。
+原生报告只对文档列出的格式自动解析，未知格式保持开放。摘要保证一致性，不证明日志不可篡改或原始工具本身正确。规则/模型覆盖、抽象和工程适用性仍需复核。单元和宿主测试的结果不代表真实模型新设计、全流程 PDK 或制造签核验证。
 
-固定 Harness 依赖的已报告风险及实际兼容范围见验证说明。包可本地安装和打包；正式公开发布前，完成约定实测并复核最终 tarball。原始本地运行记录、依赖目录、主机配置和凭据不进入独立公开源码仓库。
+实际兼容范围见验证说明。包可本地安装和打包；正式发布到 npm 前，完成发布检查单要求的实测并复核最终 tarball。原始本地运行记录、依赖目录、主机配置和凭据不进入公开源码仓库。
