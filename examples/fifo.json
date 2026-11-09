@@ -1,0 +1,8 @@
+{
+  "name": "Streaming FIFO",
+  "top": "stream_fifo",
+  "kind": "stream",
+  "target": "rtl",
+  "formal": true,
+  "multiclock": false
+}

@@ -1,0 +1,9 @@
+{
+  "name": "Pipelined DSP MAC",
+  "top": "dsp_mac",
+  "kind": "arithmetic",
+  "target": "asic",
+  "platforms": [{ "id": "sky130hd", "macros": false }],
+  "formal": true,
+  "multiclock": false
+}

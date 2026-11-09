@@ -1,0 +1,7 @@
+- insert:
+    - id: rtl-flow
+      name: dsh-rtl-flow
+      config:
+        enabled: true
+        promptOrder: 620
+        maxInputBytes: 1048576

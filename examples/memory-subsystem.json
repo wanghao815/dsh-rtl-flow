@@ -1,0 +1,9 @@
+{
+  "name": "Memory subsystem",
+  "top": "memory_subsystem",
+  "kind": "memory",
+  "target": "asic",
+  "platforms": [{ "id": "sky130hd", "macros": true }],
+  "formal": true,
+  "multiclock": true
+}

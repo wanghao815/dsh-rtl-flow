@@ -1,0 +1,9 @@
+node_modules/
+*.tgz
+.local/
+/reports/
+.DS_Store
+.env
+.env.*
+.npmrc
+/*.log

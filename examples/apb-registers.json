@@ -1,0 +1,9 @@
+{
+  "name": "APB register controller",
+  "top": "apb_regs",
+  "kind": "control",
+  "target": "asic",
+  "platforms": [{ "id": "nangate45", "macros": false }],
+  "formal": true,
+  "multiclock": false
+}

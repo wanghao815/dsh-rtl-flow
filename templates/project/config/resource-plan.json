@@ -1,0 +1,9 @@
+{
+  "schema_version": 2,
+  "forecast_complete": false,
+  "prior_wall_minutes": 0,
+  "disk_spent_gib": 0,
+  "workspaces": ["."],
+  "tasks": [],
+  "note": "List ALL remaining tasks with id, heavy, depends_on, argv and estimate {wall_minutes,peak_memory_gib,disk_gib,basis,reason,evidence}. Unknown values block. Record prior spent time/disk with a stated measurement scope."
+}

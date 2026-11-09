@@ -1,0 +1,79 @@
+{
+  "name": "dsh-rtl-flow",
+  "version": "0.2.0",
+  "description": "Architecture, RTL, verification and physical implementation workflows with evidence-based stage gates for DeepSeek Harness.",
+  "type": "module",
+  "license": "MIT",
+  "author": "wanghao815",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wanghao815/dsh-rtl-flow.git"
+  },
+  "homepage": "https://github.com/wanghao815/dsh-rtl-flow#readme",
+  "bugs": {
+    "url": "https://github.com/wanghao815/dsh-rtl-flow/issues"
+  },
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./core": "./src/core.js",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
+  },
+  "bin": {
+    "rtl-flow": "bin/rtl-flow.js"
+  },
+  "files": [
+    "src/",
+    "bin/",
+    "skills/",
+    "templates/",
+    "docs/",
+    "examples/",
+    "locale/",
+    "cordis.patch.yml",
+    "LICENSE",
+    "README.md"
+  ],
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "rtl",
+    "systemverilog",
+    "verification",
+    "asic",
+    "eda"
+  ],
+  "engines": {
+    "node": ">=24.9.0",
+    "dsh": "0.2.2-rc.1"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "~4.1.0",
+    "@deepseek-ai/dsh-system-prompt": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-tools": "0.2.2-rc.1"
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "~3.19.0"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "4.1.0",
+    "@deepseek-ai/dsh-system-prompt": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-tool-executor-native": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-tools": "0.2.2-rc.1"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "check": "node scripts/check-package.js",
+    "prepack": "npm run check && npm test"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

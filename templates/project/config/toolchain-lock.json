@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "status": "unverified",
+  "host": { "os": null, "architecture": null, "memory_gib": null },
+  "tools": [],
+  "platforms": [],
+  "macros": [],
+  "rules": [],
+  "dependencies": [],
+  "note": "Fill actual executable paths, versions/commits, build options, view hashes and validation reports. Presence is not readiness."
+}
