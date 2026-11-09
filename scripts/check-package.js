@@ -3,6 +3,7 @@ import { resolve, dirname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import assert from 'node:assert/strict'
 import { KINDS, makeProject, scaffold, TOPICS, readGuide } from '../src/core.js'
+import { backendDefaults, validateBackendConfig } from '../src/backend.js'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
 const pkg = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'))
@@ -12,6 +13,8 @@ for (const name of ['@deepseek-ai/cordis', '@deepseek-ai/dsh-tools', '@deepseek-
   assert.ok(pkg.peerDependencies[name] && pkg.devDependencies[name], `missing peer/dev: ${name}`)
 }
 assert.ok(!pkg.files.some(p => /^(reports|tests|node_modules|\.\.)/.test(p)))
+assert.deepEqual(validateBackendConfig(backendDefaults()), [])
+for (const path of ['src/backend.js', 'src/backend-probe.py', 'docs/backend-setup.md']) await stat(resolve(root, path))
 for (const path of ['src/index.js', 'bin/rtl-flow.js', 'skills/rtl-design/SKILL.md', 'docs/core-workflow.md', 'docs/evidence.md', 'docs/resources.md', 'templates/project/config/resource-plan.json', 'LICENSE', 'README.md']) await stat(resolve(root, path))
 for (const language of ['en', 'zh']) {
   const value = JSON.parse(await readFile(resolve(root, `locale/${language}.json`), 'utf8'))

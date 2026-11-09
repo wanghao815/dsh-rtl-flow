@@ -6,14 +6,14 @@
 
 ## 生成候选包
 
-以下示例按 `package.json` 版本 0.2.0 书写；更改版本后同步实际文件名。在最终选定提交的插件仓库根目录执行：
+以下示例按 `package.json` 版本 0.3.0 书写；更改版本后同步实际文件名。在最终选定提交的插件仓库根目录执行：
 
 ```sh
 npm ci --ignore-scripts
 npm run check
 npm test
 npm pack
-shasum -a 256 dsh-rtl-flow-0.2.0.tgz
+shasum -a 256 dsh-rtl-flow-0.3.0.tgz
 ```
 
 `prepack` 会运行检查和测试。Verilator 缺失时 FIFO 测试明确 skip，发布记录须保留真实范围。安装包应只包含白名单文件，不含 tests、reports、node_modules、PDK、工具、主机配置和凭据；无需构建，入口为 ESM JavaScript。
@@ -29,7 +29,7 @@ shasum -a 256 dsh-rtl-flow-0.2.0.tgz
 以下 `rtl-candidate` 为独立测试 profile 示例，须确认与正在验证的 dsh 进程一致：
 
 ```sh
-dsh plugin --profile rtl-candidate add ./dsh-rtl-flow-0.2.0.tgz
+dsh plugin --profile rtl-candidate add ./dsh-rtl-flow-0.3.0.tgz
 dsh --profile rtl-candidate --dump-config
 dsh --profile rtl-candidate
 ```
@@ -47,8 +47,8 @@ profile 安装可能提示共享 peer 未直接安装在 profile。Harness 通�
 ```sh
 npm whoami --registry=https://registry.npmjs.org/
 npm view dsh-rtl-flow versions --json --registry=https://registry.npmjs.org/
-npm publish ./dsh-rtl-flow-0.2.0.tgz --dry-run --access public --registry=https://registry.npmjs.org/
-npm publish ./dsh-rtl-flow-0.2.0.tgz --access public --registry=https://registry.npmjs.org/
+npm publish ./dsh-rtl-flow-0.3.0.tgz --dry-run --access public --registry=https://registry.npmjs.org/
+npm publish ./dsh-rtl-flow-0.3.0.tgz --access public --registry=https://registry.npmjs.org/
 ```
 
 版本查询失败须辨别未发布、网络、认证及权限原因。记录候选 SHA-256、实际源提交、tag/release、原始发布结果及 registry 的完整性信息。dry-run 和正式发布使用已核对的同一 tarball；不要在发布时隐式从目录重新打包。
@@ -62,7 +62,7 @@ npm publish ./dsh-rtl-flow-0.2.0.tgz --access public --registry=https://registry
 使用另一个干净测试 profile，从公开 npm 包安装，并核对具体版本：
 
 ```sh
-dsh plugin --profile rtl-public add dsh-rtl-flow@0.2.0
+dsh plugin --profile rtl-public add dsh-rtl-flow@0.3.0
 dsh --profile rtl-public --dump-config
 dsh --profile rtl-public
 ```

@@ -1,6 +1,6 @@
 {
   "name": "dsh-rtl-flow",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Architecture, RTL, verification and physical implementation workflows with evidence-based stage gates for DeepSeek Harness.",
   "type": "module",
   "license": "MIT",
@@ -17,6 +17,7 @@
   "exports": {
     ".": "./src/index.js",
     "./core": "./src/core.js",
+    "./backend": "./src/backend.js",
     "./package.json": "./package.json",
     "./locale/*.json": "./locale/*.json"
   },

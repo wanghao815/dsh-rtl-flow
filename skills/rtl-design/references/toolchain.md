@@ -4,7 +4,11 @@
 
 记录可执行路径、版本/提交、宿主 OS/架构、构建选项、补丁、求解器、Python 依赖、标准单元、PDK、RC、规则和宏视图。安装、工具启动、功能测试、小流程贯通、真实设计通过是不同状态。
 
-开源 ASIC 参考工具组合：SystemVerilog、Verilator/cocotb、Yosys/ABC、SBY/EQY、OpenROAD/ORFS/OpenSTA、KLayout/IC Netgen。它是可替换的适配方案；现有商业工具与项目已验证流程优先按项目选择复用。当前插件不会自动安装 EDA 工具。
+开源 ASIC 参考工具组合：SystemVerilog、Verilator/cocotb、Yosys/ABC、SBY/EQY、OpenROAD/ORFS/OpenSTA、KLayout/IC Netgen。它是可替换的适配方案；现有商业工具与项目已验证流程优先按项目选择复用。先确认用户是否选择 ORFS，不因缺少它而替换现有商业流程。
+
+ORFS 的可执行环境准备入口为 `rtl-flow env <project> --action init|inspect|plan|prepare|check`，完整流程及官方链接见 [环境准备](../../../docs/backend-setup.md)。已有原生工具、ORFS 根目录与平台材料优先复用；缺失时可在明确选择 Docker 路线后自动获取固定 digest 的官方 ORFS 镜像，其内含配套工具和 Nangate45 平台。获取和检查均纳入现有前台资源运行器，不在 npm 安装或插件加载时下载。资源估计未知、架构未明确、引擎空间无法实测时阻塞。
+
+`network=offline` 禁止访问镜像获取接口，`downloads_dir` 只读识别用户缓存，不把源码包、DMG 或压缩包当成已安装工具。不自动安装 Docker 本体、不自动编译 OpenROAD，不混搭其他 PDK。最小检查仅解析版本及平台 LEF/Liberty/GDS 库，不执行 DUT 的 RTL-to-GDS。环境锁漂移需重建计划，不复用失效证据。
 
 | 最小检查 | 判据 |
 | --- | --- |

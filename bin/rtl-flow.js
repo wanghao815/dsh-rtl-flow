@@ -8,8 +8,9 @@ import { smallRead } from '../src/common.js'
 import { inspectResources } from '../src/resources.js'
 import { runTask } from '../src/runner.js'
 import { parseReport } from '../src/reports.js'
+import { initBackend, inspectBackend, planBackend, prepareBackend, checkBackend, probeBackend } from '../src/backend.js'
 
-const help = `rtl-flow 0.2.0 (Node >=24.9)
+const help = `rtl-flow 0.3.0 (Node >=24.9)
   guide <topic>                         Main stages and feature-specific guidance
   plan --config <options.json>           Preview new project files (no writes)
   init <new-dir> --config <options.json>  Explicitly create drafts, never overwrite
@@ -22,8 +23,10 @@ const help = `rtl-flow 0.2.0 (Node >=24.9)
   resources <dir>                       Probe actual device and remaining-work budget
   run <dir> --task <id>                 Explicit foreground, serial, guarded native task
   migrate <dir>                         Preview schema-v1 conversion; no evidence recertification
+  env <dir> --action init|inspect|plan|prepare|check  Choose/reuse/acquire a locked ORFS environment
   hash <file> | overlay                 Digest or absolute development overlay
-No command installs EDA tools, resumes paused work or publishes a package.
+Only explicit env prepare can acquire the selected official environment, under the complete resource plan.
+No npm install hook downloads EDA/PDK. No command implicitly runs RTL-to-GDS or publishes a package.
 `
 const controller = new AbortController()
 process.once('SIGINT', () => controller.abort(new Error('Interrupted')))
@@ -38,11 +41,22 @@ try {
   const { positionals, values } = parseArgs({ allowPositionals: true, options: {
     config: { type: 'string' }, help: { type: 'boolean', short: 'h' },
     entry: { type: 'string' }, impact: { type: 'string' }, task: { type: 'string' },
+    action: { type: 'string' },
   } })
   const [command, argument] = positionals
   if (values.help || !command) process.stdout.write(help)
   else if (command === 'guide') process.stdout.write(await readGuide(argument, controller.signal))
-  else if (command === 'overlay') {
+  else if (command === 'env' || command === 'backend-probe') {
+    if (!argument) throw new Error('Environment operations need a project directory')
+    const action = values.action ?? 'inspect'
+    const handlers = { init: initBackend, inspect: inspectBackend, plan: planBackend, prepare: prepareBackend, check: checkBackend }
+    if (command === 'backend-probe') print(await probeBackend(argument, controller.signal))
+    else {
+      if (!Object.hasOwn(handlers, action)) throw new Error('Unknown environment action')
+      const result = await handlers[action](argument, controller.signal); print(result)
+      if (['blocked', 'failed', 'aborted', 'stale'].includes(result.status) || result.can_prepare === false) process.exitCode = 1
+    }
+  } else if (command === 'overlay') {
     const { fileURLToPath } = await import('node:url')
     process.stdout.write(`- insert:\n    - id: rtl-flow\n      name: ${JSON.stringify(fileURLToPath(new URL('../src/index.js', import.meta.url)))}\n`)
   } else if (command === 'hash') {

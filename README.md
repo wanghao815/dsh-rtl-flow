@@ -24,7 +24,7 @@ stage 主流程与 arithmetic、stream、protocol、multiclock、memory、macros
 
 ## 安装与配置
 
-已测运行基线：Node.js ≥24.9，DeepSeek Harness **0.2.2-rc.1**。DSH 是预览版，升级后重新验证。插件版本 0.2.0 与 DSH 版本彼此独立。
+运行要求：Node.js ≥24.9，宿主 API 兼容基线为 DeepSeek Harness **0.2.2-rc.1**。DSH 是预览版，升级后重新验证。插件版本 0.3.0 与 DSH 版本彼此独立。
 
 以下命令在插件仓库根目录（含 package.json）执行。
 
@@ -44,7 +44,7 @@ dsh --profile rtl
 
 未全局安装 dsh，可用 `npx --yes @deepseek-ai/dsh@0.2.2-rc.1` 替代命令中的 dsh。开发 overlay 用 `node bin/rtl-flow.js overlay` 输出绝对入口路径，选择 bundle 或 overlay 中一种加载方式。
 
-正式发布 npm 后，可直接安装 `dsh-rtl-flow@0.2.0`。源码位于 [GitHub](https://github.com/wanghao815/dsh-rtl-flow)，npm 可用版本以实际 registry 为准。发布步骤与实测条件见 [发布检查单](docs/release-checklist.md)。
+可从 npm 安装 `dsh-rtl-flow@0.3.0`，公开版本以实际 registry 为准。源码位于 [GitHub](https://github.com/wanghao815/dsh-rtl-flow)，发布步骤与实测条件见 [发布检查单](docs/release-checklist.md)。
 
 插件沿用宿主模型、文件/终端权限及取消机制，不包含 API key。配置字段：`enabled`、`promptOrder`、`maxInputBytes`，以及可选 `workspaceRoot`。要使用原生资源检测工具，将 workspaceRoot 设为当前已授权项目的绝对路径；不配置时用宿主终端执行 CLI resources。切换项目须同步更新该字段。
 
@@ -59,6 +59,22 @@ dsh --profile rtl
 | rtl_resource_check | 对 workspaceRoot 指定项目实际检测内存/磁盘、已有耗时、剩余任务和预算；不启动进程 |
 
 RTL、testbench 和流程由宿主模型结合项目合同生成。工具报告的真实读取、原生指标解析和文件摘要核对由 CLI audit 完成；模型工具的 JSON 声明检查不能替代它。
+
+## OpenROAD/ORFS 环境准备
+
+先探测已有环境并确认项目选择 ORFS。插件不携带 EDA/PDK 本体，npm 安装和工具加载不下载环境；显式 `env prepare` 才会在完整资源预检后获取缺失的官方环境。
+
+```sh
+rtl-flow env /path/to/project --action init
+rtl-flow env /path/to/project --action inspect
+rtl-flow env /path/to/project --action plan
+rtl-flow env /path/to/project --action prepare
+rtl-flow env /path/to/project --action check
+```
+
+先填写配置与资源估算，并把最终计划保存为 `config/backend-plan.json`。已有原生 OpenROAD/Yosys/KLayout/ORFS 与 Nangate45 材料优先复用；Docker 路线使用固定架构及 digest 的官方 `openroad/orfs` 镜像，工具与平台同版获取。下载缓存可只读识别，离线模式禁止外部获取。
+
+当前自动获取支持可实测镜像存储空间的本地 Linux Docker 引擎，Docker 运行时本身由用户安装。Docker Desktop/远程存储不可测时明确阻塞，ARM 不静默使用 x86 模拟。最小检查只读取工具版本及平台 LEF/Liberty/GDS 库，不运行设计实现。完整步骤、官方链接、锁定与边界见 [环境准备](docs/backend-setup.md)。
 
 ## CLI 用法
 
