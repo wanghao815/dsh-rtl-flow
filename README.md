@@ -74,7 +74,7 @@ rtl-flow env /path/to/project --action check
 
 先填写配置与资源估算，并把最终计划保存为 `config/backend-plan.json`。已有原生 OpenROAD/Yosys/KLayout/ORFS 与 Nangate45 材料优先复用；Docker 路线使用固定架构及 digest 的官方 `openroad/orfs` 镜像，工具与平台同版获取。下载缓存可只读识别，离线模式禁止外部获取。
 
-当前自动获取支持可实测镜像存储空间的本地 Linux Docker 引擎，Docker 运行时本身由用户安装。Docker Desktop/远程存储不可测时明确阻塞，ARM 不静默使用 x86 模拟。最小检查只读取工具版本及平台 LEF/Liberty/GDS 库，不运行设计实现。完整步骤、官方链接、锁定与边界见 [环境准备](docs/backend-setup.md)。
+当前自动获取支持可实测镜像存储空间、与项目共用文件系统的本地 Linux Docker 引擎，Docker 运行时本身由用户安装。独立存储分区、Docker Desktop/远程存储需另行适配，ARM 不静默使用 x86 模拟。最小检查只读取工具版本及平台 LEF/Liberty/GDS 库，不运行设计实现。完整步骤、官方链接、锁定与边界见 [环境准备](docs/backend-setup.md)。
 
 ## CLI 用法
 

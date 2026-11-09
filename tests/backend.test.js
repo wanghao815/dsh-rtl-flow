@@ -37,7 +37,7 @@ base=pathlib.Path(__file__).parent
 args=sys.argv[1:]
 with (base/'events').open('a') as log: log.write(json.dumps(args)+'\\n')
 if args[0]=='info':
- print(json.dumps({'OSType':'linux','Architecture':os.environ.get('FAKE_DOCKER_ARCH','amd64'),'MemTotal':8*1024**3,'DockerRootDir':str(base/'store'),'ID':'fixture-engine','ServerVersion':'fixture-1'}))
+ print(json.dumps({'OSType':'linux','Architecture':os.environ.get('FAKE_DOCKER_ARCH','amd64'),'MemTotal':8*1024**3,'DockerRootDir':os.environ.get('FAKE_DOCKER_STORE',str(base/'store')),'ID':'fixture-engine','ServerVersion':'fixture-1'}))
 elif args[:2]==['context','inspect']:
  print(json.dumps([{'Endpoints':{'docker':{'Host':os.environ.get('FAKE_DOCKER_ENDPOINT','unix:///fixture.sock')}}}]))
 elif args[:2]==['image','inspect']:
@@ -50,6 +50,10 @@ elif args[0]=='pull':
 elif args[0]=='run':
  assert args[args.index('--network')+1]=='none' and '--read-only' in args
  assert '--memory' in args and '--cpus' in args and '--pids-limit' in args
+ if (base/'container.json').exists():
+  print('container name already in use',file=sys.stderr);sys.exit(125)
+ key,value=args[args.index('--label')+1].split('=',1)
+ (base/'container.json').write_text(json.dumps({'Config':{'Labels':{key:value}}}))
  mounts=[args[i+1] for i,a in enumerate(args) if a=='--mount']
  source=lambda target:next(m.split('source=',1)[1].split(',target=',1)[0] for m in mounts if ',target='+target in m)
  output=pathlib.Path(source('/rtl-report')); probe=pathlib.Path(source('/rtl-probe.py'))
@@ -60,8 +64,11 @@ elif args[0]=='run':
  sys.exit(r.returncode)
 elif args[0]=='rm':
  assert args[-1].startswith('rtl-backend-')
+ (base/'container.json').unlink(missing_ok=True)
 elif args[:2]==['container','inspect']:
- print('No such container',file=sys.stderr);sys.exit(1)
+ if not (base/'container.json').exists():
+  print('No such container',file=sys.stderr);sys.exit(1)
+ print('['+(base/'container.json').read_text()+']')
 else:sys.exit(3)
 `
 
@@ -227,5 +234,37 @@ test('failed pinned-image acquisition preserves failure and does not start the c
   assert.equal(r.status, 'failed'); assert.equal(r.run.exit_code, 7)
   const events = await readFile(resolve(f.toolsDir, 'events'), 'utf8')
   assert.equal(events.includes('["run"'), false)
+  await assert.rejects(access(resolve(f.root, 'config/backend-lock.json')))
+})
+
+test('a separate Docker store filesystem is blocked rather than omitted from growth accounting', async t => {
+  const f = await environment(t, 'docker')
+  const previous = process.env.FAKE_DOCKER_STORE
+  process.env.FAKE_DOCKER_STORE = '/dev'
+  t.after(() => { if (previous === undefined) delete process.env.FAKE_DOCKER_STORE; else process.env.FAKE_DOCKER_STORE = previous })
+  const p = await planBackend(f.root, undefined, { resolveImage: async () => ({ reference: image, platform: 'linux/amd64' }) })
+  assert.equal(p.can_prepare, false)
+  assert.ok(p.issues.some(i => i.includes('share the measured project filesystem')))
+  await assert.rejects(prepareBackend(f.root), /changed|filesystem/)
+  assert.equal((JSON.parse(await readFile(resolve(f.root, 'reports/rtl-flow/runs.json'), 'utf8'))).runs.length, 0)
+})
+
+test('explicit OCI index pin binds its selected architecture manifest', async t => {
+  const f = await environment(t, 'docker'), index = 'sha256:' + 'c'.repeat(64)
+  f.config.docker.image = 'openroad/orfs@' + index
+  await f.put('config/backend.json', f.config)
+  const p = await planBackend(f.root, undefined, { resolveImage: async () => ({ reference: image, index_digest: index, platform: 'linux/amd64' }) })
+  await f.put('config/backend-plan.json', p)
+  assert.equal((await prepareBackend(f.root)).status, 'ready')
+})
+
+test('a conflicting container without the ownership label is never removed', async t => {
+  const f = await environment(t, 'docker')
+  const path = resolve(f.toolsDir, 'container.json'), foreign = { Config: { Labels: { owner: 'another-project' } } }
+  await writeFile(path, JSON.stringify(foreign))
+  await assert.rejects(prepareBackend(f.root), /ownership label differs/)
+  assert.deepEqual(JSON.parse(await readFile(path, 'utf8')), foreign)
+  const events = (await readFile(resolve(f.toolsDir, 'events'), 'utf8')).trim().split('\n').map(v => JSON.parse(v))
+  assert.equal(events.some(v => v[0] === 'rm'), false)
   await assert.rejects(access(resolve(f.root, 'config/backend-lock.json')))
 })

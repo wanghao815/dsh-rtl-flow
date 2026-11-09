@@ -148,7 +148,11 @@ export async function inspectBackend(directory, signal) {
       docker = { available: true, os: i.OSType, architecture: archName(i.Architecture), memory_gib: i.MemTotal / GiB,
         root: i.DockerRootDir, local_linux_store: process.platform === 'linux' && host?.startsWith('unix://') === true,
         identity: digest({ id: i.ID, server: i.ServerVersion, host, root: i.DockerRootDir, arch: i.Architecture }) }
-      if (docker.local_linux_store) try { const fs = await statfs(docker.root); docker.disk_free_gib = fs.bavail * fs.bsize / GiB } catch { docker.disk_free_gib = null }
+      if (docker.local_linux_store) try {
+        const fs = await statfs(docker.root)
+        docker.disk_free_gib = fs.bavail * fs.bsize / GiB
+        docker.shares_project_filesystem = (await stat(docker.root)).dev === (await stat(root)).dev
+      } catch { docker.disk_free_gib = null }
     } else docker.error = info.stderr
   }
   return { status: 'detected', config_sha256: digest(c), requested_mode: c.mode, platform: c.platform, orfs_root: orfsRoot, tools,
@@ -234,6 +238,7 @@ export async function planBackend(directory, signal, { resolveImage = resolveOff
     if (arch !== platform.split('/')[1] && !c.docker.allow_emulation) issues.push('Cross-architecture execution needs explicit allow_emulation=true and its own resource estimate')
     if (!detected.docker.available) issues.push('Docker CLI/daemon unavailable; install the container runtime using the official link before acquisition')
     if (detected.docker.available && (!detected.docker.local_linux_store || !Number.isFinite(detected.docker.disk_free_gib))) issues.push('Actual Docker engine-store free space cannot be measured. Automatic acquisition currently requires a local Linux engine with an accessible DockerRootDir; do not substitute host space for Docker Desktop/remote storage')
+    if (detected.docker.available && detected.docker.local_linux_store && detected.docker.shares_project_filesystem !== true) issues.push('Docker store must share the measured project filesystem for complete growth accounting; a separate store filesystem needs its own adapter')
     let cached = null
     if (detected.tools.docker && detected.docker.available) {
       const r = await command(detected.tools.docker, ['image', 'inspect', c.docker.image], signal)
@@ -269,13 +274,13 @@ async function verifiedPlan(root, signal) {
       || !/^linux\/(amd64|arm64)$/.test(p.resolved.image.platform)
       || (c.docker.platform && p.resolved.image.platform !== c.docker.platform)
       || (current.docker.architecture !== p.resolved.image.platform.split('/')[1] && !c.docker.allow_emulation)
-      || (c.docker.image.includes('@') && c.docker.image !== p.resolved.image.reference)
+      || (c.docker.image.includes('@') && c.docker.image !== p.resolved.image.reference && c.docker.image !== `openroad/orfs@${p.resolved.image.index_digest}`)
       || (c.network === 'offline' && p.resolved.acquire))) throw new Error('Invalid or forbidden Docker acquisition plan')
   return { c, p }
 }
 async function checkDockerIdentity(root, c, p, signal, resources = true) {
   const current = await inspectBackend(root, signal)
-  if (!current.docker.available || current.docker.identity !== p.resolved.engine.identity || !current.docker.local_linux_store) throw new Error('Docker context/engine changed or storage cannot be measured; replan')
+  if (!current.docker.available || current.docker.identity !== p.resolved.engine.identity || !current.docker.local_linux_store || current.docker.shares_project_filesystem !== true) throw new Error('Docker context/engine changed or storage cannot be measured on the project filesystem; replan')
   if (!resources) return current.docker
   const project = await json(root, 'rtl-flow.json', signal)
   const disk = p.tasks.reduce((n, task) => n + (task.estimate?.disk_gib ?? NaN), 0)
@@ -436,7 +441,7 @@ export async function probeBackend(directory, signal) {
         '--platform', p.resolved.image.platform, '--mount', `type=bind,source=${PROBE},target=/rtl-probe.py,readonly`,
         '--mount', `type=bind,source=${output},target=/rtl-report`, '--entrypoint', '/bin/bash', image, '-lc',
         '. /OpenROAD-flow-scripts/env.sh && exec python3 /rtl-probe.py --request /rtl-report/request.json --output /rtl-report/result.json'], signal, undefined, p.tasks.at(-1).estimate.wall_minutes * 60000)
-    } finally { await command(d, ['rm', '--force', containerId], undefined) }
+    } finally { await cleanupContainer(p) }
     if (run.ok) { const report = JSON.parse(await readFile(result, 'utf8')); report.image_id = info.Id; await writeJSON(root, `${c.cache_dir}/probe/result.json`, report) }
   }
   process.stdout.write(run.stdout)
