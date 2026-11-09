@@ -33,6 +33,24 @@ JSON 指标分支采用明确标注的合成单元夹具，不代表真实物理
 
 环境管理的软件测试使用本地可控工具与 Docker 协议夹具，不把夹具当成真实 EDA 或 PDK。独立的 Linux CI 入口可在资源预检后获取官方 ORFS 镜像，读取工具版本和 Nangate45 库材料，报告具体 digest、工具、材料及范围；原始结果以实际 CI 记录为准。它不提供 DUT，也不运行 RTL-to-GDS。Docker Desktop、远程引擎、其他 PDK 和原生完整工具组合的实测范围须单列，不能从 Linux 容器结果外推。
 
+## 0.3.0 环境实测
+
+2026-11-09，[Linux CI 42596063909](https://github.com/wanghao815/dsh-rtl-flow/actions/runs/42596063909) 在实现提交 [95a1890](https://github.com/wanghao815/dsh-rtl-flow/commit/95a18908e2e52443c553af5ed5eda0ae25c1742f) 上完成 48 项软件测试，48 通过、0 失败、0 skip；另行完成真实官方镜像获取和库读取检查，两项任务均原生退出 0。原始工具 stdout/stderr、资源 ledger、环境锁和检查报告由该次 CI 保存，测试未使用本机 EDA/PDK 下载。
+
+真实环境固定为 `linux/amd64`、`openroad/orfs@sha256:b71cbec834b10e89c9f471392945b8a230c7dc5cc6f63c6d82d51c1adf4ebf02`，平台为 Nangate45。实际输出如下：
+
+| 项目 | 实际结果 |
+| --- | --- |
+| OpenROAD | `-version` 原样返回 `unknown`；不推断语义版本，使用固定镜像和二进制 SHA-256 `26e3a293a66adac92d7afee20511d16d795e7a43148b3db09102386561c323d3` 标识 |
+| Yosys / KLayout | Yosys `0.68+post`，其 git sha1 返回 `UNKNOWN`；KLayout `0.30.12` |
+| Python / Make | Python `3.14.4`，GNU Make `4.4.1` |
+| OpenROAD 库读取 | 技术 LEF 读入 22 层、27 个 via；单元 LEF 读入 135 个单元，Liberty 读取完成，退出 0 |
+| Yosys / KLayout 库读取 | Liberty 导入 135 个单元类型；GDS 库读入 135 个单元；均退出 0 |
+| 材料绑定 | 探针记录 216 项 ORFS/平台材料及摘要；有效环境锁和后续漂移检查通过 |
+| 资源 | 镜像获取约 55 秒，保守观测增长约 4.582 GiB；库探针约 2.91 秒。Docker daemon/容器内部内存不等同于 CLI 进程树 RSS，探针另有容器内存硬限制 |
+
+这只证明该固定环境可以读取所测库材料。未提供 RTL，未生成设计 GDS，未运行设计综合、布局、布线、STA、DRC 或 LVS；原生宿主完整工具组合、其他平台与架构仍未实测。
+
 ## 独立工程验证（尚未完成）
 
 - 真实模型在实际 dsh profile 中使用本插件，从新需求生成架构、周期合同、RTL 和独立验证，并检出故障负例。
