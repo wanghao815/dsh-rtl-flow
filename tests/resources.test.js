@@ -52,6 +52,25 @@ test('read-only probe obtains real host memory and filesystem free space', async
   assert.equal(typeof d.disks[0].device_id, 'string')
 })
 
+test('running disk growth consumes its own estimate once while past attempts and reserves remain charged', () => {
+  const p = fresh({ budget: { ...budget, disk_gib: 4 } }), forecast = plan()
+  const active = { task_id: 'route', execution_status: 'running', started_at: new Date().toISOString(),
+    task_sha256: taskFingerprints(forecast).get('route'), disk_growth_upper_bound_gib: 2 }
+  const runs = { schema_version: 2, runs: [active] }
+  const snapshot = { ...device(), disks: [{ workspace: '.', available_gib: 3 }] }
+  const result = assessResources(p, forecast, runs, snapshot)
+  assert.equal(result.can_start, true, JSON.stringify(result))
+  assert.equal(result.checks.disk_spent_gib, 3); assert.equal(result.checks.remaining_disk_gib, 1)
+  assert.equal(assessResources(p, forecast, runs, { ...snapshot, disks: [{ workspace: '.', available_gib: 2.9 }] }).can_start, false)
+  active.disk_growth_upper_bound_gib = 3.1
+  assert.ok(assessResources(p, forecast, runs, device()).issues.some(i => i.includes('disk-growth estimate')))
+  active.disk_growth_upper_bound_gib = 1
+  runs.runs.unshift({ ...active, execution_status: 'failed', wall_minutes: 1, disk_growth_upper_bound_gib: 1 })
+  assert.ok(assessResources(p, forecast, runs, device()).issues.some(i => i.includes('disk budget')))
+  active.disk_growth_upper_bound_gib = -1
+  assert.ok(validateResourcePlan(forecast, runs).some(i => i.includes('disk growth')))
+})
+
 async function runnable() {
   const f = await fixture({ budget: { wall_minutes: 2, memory_gib: 1, disk_gib: 1, heavy_jobs: 1, attempts: 4, memory_reserve_gib: 0, disk_reserve_gib: 0 } })
   const forecast = { schema_version: 2, forecast_complete: true, prior_wall_minutes: 0, disk_spent_gib: 0, workspaces: ['.'], tasks: [{ ...task('probe'), heavy: false,

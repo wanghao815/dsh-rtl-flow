@@ -93,10 +93,12 @@ export async function runTask(directory, taskId, signal, { pollMs = 1000 } = {})
         peak = Math.max(peak, rss)
         if (closed) return
         if (await sha256(await within(root, 'config/resource-plan.json')) !== checkpointHash || await sha256(await within(root, 'rtl-flow.json')) !== projectHash) { stop('Project/resource plan changed during execution'); return }
+        measureGrowth(await probeDevice(root, plan.workspaces))
+        if (closed) return
+        run.disk_growth_upper_bound_gib = diskGrowth
+        await save(ledger)
         const current = await inspectResources(root, undefined, { ownedMemoryGiB: rss })
         if (closed) return
-        measureGrowth(current.device)
-        if (current.checks?.disk_spent_gib + current.checks?.remaining_disk_gib + diskGrowth > project.budget.disk_gib) stop('Observed filesystem growth plus remaining work exceeds disk budget')
         if (!current.can_start) stop(current.issues.join('; '))
       } catch (error) { if (!closed) stop(`Resource monitoring unavailable: ${error.message}`) }
       finally { monitoring = false }
@@ -126,6 +128,7 @@ export async function runTask(directory, taskId, signal, { pollMs = 1000 } = {})
       run.workspace_accounting = { before: initialUsage, after: finalUsage }
       if (await sha256(await within(root, 'config/resource-plan.json')) !== checkpointHash || await sha256(await within(root, 'rtl-flow.json')) !== projectHash) reasons.push('Project/resource plan changed during execution')
       if (run.wall_minutes > task.estimate.wall_minutes) reasons.push('Task exceeded its time estimate; revise the remaining forecast')
+      if (diskGrowth > task.estimate.disk_gib) reasons.push('Task exceeded its disk-growth estimate; revise the remaining forecast')
       const final = assessResources(project, plan, ledger, finalDevice)
       for (const issue of final.issues) if (!reasons.includes(issue)) reasons.push(issue)
       run.resource_postcheck = { can_continue: final.can_start, sampled_at: finalDevice.sampled_at, issues: final.issues }

@@ -90,6 +90,7 @@ export function validateResourcePlan(plan, ledger) {
   for (const run of ledger.runs) {
     if (!plain(run) || !ids.has(run.task_id) || !['running', 'completed', 'failed', 'aborted'].includes(run.execution_status) || !Number.isFinite(Date.parse(run.started_at))) issues.push('Invalid run entry or unknown task')
     else if (run.execution_status !== 'running' && (!nonnegative(run.wall_minutes) || !nonnegative(run.disk_growth_upper_bound_gib))) issues.push('Completed/aborted run lacks actual wall time/disk accounting')
+    else if (run.disk_growth_upper_bound_gib !== undefined && !nonnegative(run.disk_growth_upper_bound_gib)) issues.push('Invalid observed run disk growth')
   }
   return issues
 }
@@ -135,10 +136,13 @@ export function assessResources(project, plan, ledger, device, { now = Date.now(
   if (closeout && running.some(r => plan.tasks.find(t => t.id === r.task_id)?.purpose !== 'closeout')) issues.push('Design task is still running despite the closeout decision')
   const remainingMinutes = remaining.reduce((sum, t) => sum + Math.max(0, t.estimate.wall_minutes - running.filter(r => r.task_id === t.id).reduce((n, r) => n + activeTime(r), 0)), 0)
   const memory = Math.max(ownedMemoryGiB, 0, ...remaining.map(t => t.estimate.peak_memory_gib))
-  const disk = remaining.reduce((sum, t) => sum + t.estimate.disk_gib, 0)
+  // A running task's observed growth is already spent. Its estimate bounds total
+  // growth, so only the unconsumed part remains; prior failed attempts stay spent.
+  const disk = remaining.reduce((sum, t) => sum + Math.max(0, t.estimate.disk_gib - running.filter(r => r.task_id === t.id).reduce((n, r) => n + (r.disk_growth_upper_bound_gib ?? 0), 0)), 0)
   const b = project.budget
   if (elapsed + remainingMinutes > b.wall_minutes) issues.push('Elapsed time plus remaining project forecast exceeds wall-time budget')
   for (const run of running) if (activeTime(run) > plan.tasks.find(t => t.id === run.task_id).estimate.wall_minutes) issues.push('Running task exceeded its time estimate; update remaining work before continuing')
+  for (const run of running) if ((run.disk_growth_upper_bound_gib ?? 0) > plan.tasks.find(t => t.id === run.task_id).estimate.disk_gib) issues.push('Running task exceeded its disk-growth estimate; update remaining work before continuing')
   if (memory > b.memory_gib || memory + b.memory_reserve_gib > device.effective_memory_limit_gib) issues.push('Estimated peak memory exceeds budget/device capacity')
   if (memory + b.memory_reserve_gib > device.available_memory_gib + ownedMemoryGiB) issues.push('Insufficient currently available memory for remaining sequential work')
   if (ownedMemoryGiB > b.memory_gib) issues.push('Actual owned process-tree memory exceeded budget')

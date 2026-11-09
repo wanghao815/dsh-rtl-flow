@@ -190,7 +190,10 @@ export async function resolveOfficialImage(image, platform, signal) {
     compressed_bytes: m.value.layers.reduce((n, v) => n + v.size, 0), note: 'Compressed transfer size is not unpacked disk usage. Supply a conservative unpack/download estimate.' }
 }
 
-async function implementationIdentity() { return digest({ backend: await sha256(fileURLToPath(import.meta.url)), cli: await sha256(CLI), probe: await sha256(PROBE) }) }
+async function implementationIdentity() {
+  return digest({ backend: await sha256(fileURLToPath(import.meta.url)), cli: await sha256(CLI), probe: await sha256(PROBE),
+    runner: await sha256(fileURLToPath(new URL('./runner.js', import.meta.url))), resources: await sha256(fileURLToPath(new URL('./resources.js', import.meta.url))) })
+}
 async function nativeSnapshot(orfsRoot, tools) {
   const files = new Set(Object.entries(tools).filter(([name, path]) => name !== 'docker' && path).map(([, path]) => path))
   const roots = ['flow/scripts', 'flow/util', 'flow/platforms/common', 'flow/platforms/nangate45']
@@ -427,13 +430,12 @@ export async function probeBackend(directory, signal) {
     containerId = containerName(p)
     const bytes = Math.floor(p.tasks.at(-1).estimate.peak_memory_gib * GiB * 0.8)
     if (bytes < 128 * 1024 ** 2) throw new Error('Container probe needs an explicit budget of at least 160 MiB')
-    const pluginRoot = dirname(dirname(PROBE))
     try {
       run = await command(d, ['run', '--rm', '--name', containerId, '--label', `rtl.flow.backend.identity=${p.identity}`, '--network', 'none', '--read-only', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges',
         '--cpus', '1', '--memory', String(bytes), '--pids-limit', '128', '--tmpfs', '/tmp:rw,size=134217728', '-e', 'HOME=/tmp',
-        '--platform', p.resolved.image.platform, '--mount', `type=bind,source=${pluginRoot},target=/rtl-plugin,readonly`,
+        '--platform', p.resolved.image.platform, '--mount', `type=bind,source=${PROBE},target=/rtl-probe.py,readonly`,
         '--mount', `type=bind,source=${output},target=/rtl-report`, '--entrypoint', '/bin/bash', image, '-lc',
-        '. /OpenROAD-flow-scripts/env.sh && exec python3 /rtl-plugin/src/backend-probe.py --request /rtl-report/request.json --output /rtl-report/result.json'], signal, undefined, p.tasks.at(-1).estimate.wall_minutes * 60000)
+        '. /OpenROAD-flow-scripts/env.sh && exec python3 /rtl-probe.py --request /rtl-report/request.json --output /rtl-report/result.json'], signal, undefined, p.tasks.at(-1).estimate.wall_minutes * 60000)
     } finally { await command(d, ['rm', '--force', containerId], undefined) }
     if (run.ok) { const report = JSON.parse(await readFile(result, 'utf8')); report.image_id = info.Id; await writeJSON(root, `${c.cache_dir}/probe/result.json`, report) }
   }

@@ -63,10 +63,12 @@ jobs:
           node-version: 26.4.0
       - name: Guarded environment and library check only
         timeout-minutes: 20
-        run: sudo --preserve-env=PATH,RUNNER_TEMP node scripts/ci-backend.mjs
+        run: sudo --preserve-env=RUNNER_TEMP "$(command -v node)" scripts/ci-backend.mjs
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
           name: orfs-libraries-${{ github.sha }}
           retention-days: 3
-          path: artifacts/*.json
+          path: |
+            artifacts/*.json
+            artifacts/*.log

@@ -9,7 +9,7 @@ import { backendDefaults, validateBackendConfig, initBackend, inspectBackend, pl
 
 const sha = value => 'sha256:' + createHash('sha256').update(value).digest('hex')
 const image = 'openroad/orfs@sha256:' + 'a'.repeat(64)
-const estimate = memory => ({ wall_minutes: 1, peak_memory_gib: memory, disk_gib: 0.01, basis: 'upper_bound', reason: 'Bounded local software protocol fixture; no real EDA/image download', evidence: [] })
+const estimate = memory => ({ wall_minutes: 1, peak_memory_gib: memory, disk_gib: 0.1, basis: 'upper_bound', reason: 'Bounded local software protocol fixture including volume-sampling noise (observed 0.017 GiB); no real EDA/image download', evidence: [] })
 const budget = { wall_minutes: 10, memory_gib: 1, disk_gib: 1, heavy_jobs: 1, attempts: 10, memory_reserve_gib: 0, disk_reserve_gib: 0 }
 const toolScript = `#!/usr/bin/env python3
 import pathlib,sys,shlex
@@ -52,10 +52,11 @@ elif args[0]=='run':
  assert '--memory' in args and '--cpus' in args and '--pids-limit' in args
  mounts=[args[i+1] for i,a in enumerate(args) if a=='--mount']
  source=lambda target:next(m.split('source=',1)[1].split(',target=',1)[0] for m in mounts if ',target='+target in m)
- output=pathlib.Path(source('/rtl-report')); plugin=pathlib.Path(source('/rtl-plugin'))
+ output=pathlib.Path(source('/rtl-report')); probe=pathlib.Path(source('/rtl-probe.py'))
+ assert probe.is_file() and len(mounts)==2
  request=json.loads((output/'request.json').read_text()); request['orfs_root']=os.environ['FAKE_ORFS_ROOT'];request['tools']=json.loads(os.environ['FAKE_BACKEND_TOOLS'])
  (output/'fixture-request.json').write_text(json.dumps(request))
- r=subprocess.run([sys.executable,str(plugin/'src/backend-probe.py'),'--request',str(output/'fixture-request.json'),'--output',str(output/'result.json')])
+ r=subprocess.run([sys.executable,str(probe),'--request',str(output/'fixture-request.json'),'--output',str(output/'result.json')])
  sys.exit(r.returncode)
 elif args[0]=='rm':
  assert args[-1].startswith('rtl-backend-')
